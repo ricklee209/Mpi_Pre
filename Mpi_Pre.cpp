@@ -193,6 +193,15 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	char runlength[1024] = "JKL_runlength for cell information >>";
 	char str[1024];
 
+	
+	rewind(fptr_runlength);
+	
+	fscanf(fptr_runlength,"%[^\n]\n",str);
+
+	while( strcmp(str,runlength) != 0)  { 
+		fscanf(fptr_runlength,"%[^\n]\n",str); 
+	}
+
 
 
 	int n_change, flag, ch_pos;
@@ -221,7 +230,8 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	*/
 
 
-	for (int irank = 0; irank < np; irank++) {
+
+	for (int irank = np-1; irank > 0; irank--) {
 
 
 		sprintf(file_name,"BCMgrid""%0.5d"".dat",irank);    
@@ -357,7 +367,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		fprintf(fptr,"\n");
 
 
-
+		
 
 // =================================== Run length information =================================== //
 
@@ -370,28 +380,16 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 			if (irank == rank_map[0][wallcube[iwallcube]]) {
 
-				rewind(fptr_runlength);
+				fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
 
-				fscanf(fptr_runlength,"%[^\n]\n",str);
-
-				while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
+				fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
 
 
+				for (int iflag = 1; iflag <= n_change; iflag++) {
 
-				for (int count = 1; count <= iwallcube; count++) {
+					fscanf(fptr_runlength,"%d\n",&tmp_runlength[iflag]);
 
-
-					fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
-					fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
-
-
-					for (int iflag = 1; iflag <= n_change; iflag++) {
-
-						fscanf(fptr_runlength,"%d\n",&tmp_runlength[iflag]);
-
-					}
-
-				}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
+				}
 
 				fprintf(fptr,"%d\t",n_change);
 				fprintf(fptr,"%d\t",flag);
@@ -412,7 +410,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		}
 
-		fprintf(fptr_runlength,"\n");
+		//fprintf(fptr_runlength,"\n");
 
 // =================================== Run length information =================================== //
 
@@ -426,8 +424,6 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 
 	fclose(fptr_runlength);    // ---- close original BCMgrid file ---- 
-
-
 
 
 }
