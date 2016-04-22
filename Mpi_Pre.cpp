@@ -203,14 +203,23 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	int adj;
 
-	//printf("%d\n",strcmp(str,runlength));
-	//fscanf(fptr_runlength,"%d\n%d\n%d\n",&i,&j,&k);
-	//printf("%d\n%d\n%d\n",i,j,k);
+	int (*tmp_runlength) = new int[Ncell+1];
 
+
+	#pragma omp parallel
+	for (int i = 1; i <= Ncell; i++) {
+
+		tmp_runlength[i] = 0;
+
+	}
+
+/*
 	#pragma omp parallel for private(\
 	fptr,icube,rank_cubes,adj,\
 	iwallcube,str,n_change,flag,ch_pos,fptr_runlength,rank_wall_cubes\
-	)
+	)*/
+
+
 
 	for (int irank = 0; irank < np; irank++) {
 
@@ -249,7 +258,6 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
 
 // =================================== Cube size and corner information =================================== //
-
 
 
 
@@ -359,56 +367,69 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		for (icube = 1; icube < ncube; icube++) {
 
-			
+			if (irank == rank_map[0][icube]) {
 
-			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
-
-
-				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) {
+				for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
 
 
-					rewind(fptr_runlength);
-					fscanf(fptr_runlength,"%[^\n]\n",str);
-					while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
+					if (icube == wallcube[iwallcube]) {
 
 
-					
-					for (int count = 1; count <= iwallcube; count++) {
+						rewind(fptr_runlength);
+
+						fscanf(fptr_runlength,"%[^\n]\n",str);
+
+						while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
 
 
-						fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
-						fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
+
+						for (int count = 1; count <= iwallcube; count++) {
 
 
-						// -- ???? -- //
-						if (count < iwallcube)
-						for (int iflag = 1; iflag <= n_change; iflag++) {
+							fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
+							fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
+
+
+
+
+							for (int iflag = 1; iflag <= n_change; iflag++) {
+
+								fscanf(fptr_runlength,"%d\n",&tmp_runlength[iflag]);
+
+							}
+
+
+							// -- ???? -- //
+							/*if (count < iwallcube)
+							for (int iflag = 1; iflag <= n_change; iflag++) {
 
 							fscanf(fptr_runlength,"%d\n",&ch_pos);
 
+							}*/
+
+							// -- ???? -- //
+
+
+						}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
+
+						fprintf(fptr,"%d\t",n_change);
+						fprintf(fptr,"%d\t",flag);
+
+
+						for (int iflag = 1; iflag <= n_change; iflag++) {
+
+							fprintf(fptr,"%d\t",tmp_runlength[iflag]);
+
+							tmp_runlength[iflag] = 0;
+
 						}
-						// -- ???? -- //
 
 
-					}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
+						fprintf(fptr,"\n");
 
-					fprintf(fptr,"%d\t",n_change);
-					fprintf(fptr,"%d\t",flag);
+					}    // ---- if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) ---- //
 
-					for (int iflag = 1; iflag <= n_change; iflag++) {
-						
-						fscanf(fptr_runlength,"%d\t",&ch_pos);
-
-						fprintf(fptr,"%d\t",ch_pos);
-
-						//printf("%d\t",ch_pos);
-						
-					}
-
-					fprintf(fptr,"\n");
-
-				}    // ---- if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) ---- //
-
+				}
 
 			}
 
