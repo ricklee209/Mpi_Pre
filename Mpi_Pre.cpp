@@ -24,7 +24,9 @@ int (*adj_number)[5][7] = new int[ncube][5][7],
 
 int (*wallcube) = new int[ncube],
 
-int (*rank_map)[ncube] = new int[2][ncube]
+int (*rank_map)[ncube] = new int[2][ncube],
+
+int (*cube_map)[np] = new int[2][np]
 // ============================================================================ //
 )
 {
@@ -160,9 +162,15 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 				rank_map[1][icube] = rank_cubes;
 
+				if(rank_cubes == 1) cube_map[0][irank] = icube;
+
 				}
 
+
+
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+		cube_map[1][irank] = cube_map[0][irank]+rank_cubes;
 
 	}    // ---- for (int irank = 0; irank < np; irank++) ---- //
 
@@ -247,29 +255,16 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		rank_cubes = 0;
 
-		#pragma omp parallel for reduction(+:rank_cubes) 
-		for (icube = 1; icube < ncube; icube++) {
-
-			if (irank == rank_map[0][icube]) rank_cubes = rank_cubes+1;
-
-		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
 		
-		#pragma omp barrier
-		fprintf(fptr,"%d\n",rank_cubes);    // ---- cubes number for each CPU ---- //
-
-
+		fprintf(fptr,"%d\n",cube_map[1][irank]-cube_map[0][irank]);    // ---- cubes number for each CPU ---- //
 
 
 
 		fprintf(fptr,"size_&_left-corner_location (x,y,z) of cube(i) >>\n");
 
-		for (icube = 1; icube < ncube; icube++) {
+		for (icube = cube_map[0][irank]; icube < cube_map[1][irank]; icube++) {
 
-			if (irank == rank_map[0][icube]) {
-
-				fprintf(fptr,"%.9f\t%.9f\t%.9f\t%.9f\n",cube_size[icube],Xcube[icube],Ycube[icube],Zcube[icube]);
-
-			}
+			fprintf(fptr,"%.9f\t%.9f\t%.9f\t%.9f\n",cube_size[icube],Xcube[icube],Ycube[icube],Zcube[icube]);
 
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
 
@@ -282,42 +277,36 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		fprintf(fptr,"Cube_neighboring_information >>\n");
 
 		i = 0;
-		for (icube = 1; icube < ncube; icube++) {
+		for (icube = cube_map[0][irank]; icube < cube_map[1][irank]; icube++) {
 
-			if (irank == rank_map[0][icube]) {
-
-
-				for (int direction_index = 1; direction_index <= 6;  direction_index++) {    
+			for (int direction_index = 1; direction_index <= 6;  direction_index++) {    
 
 
 
-					for (int iadj = 1; iadj <= 4; iadj++) {
+				for (int iadj = 1; iadj <= 4; iadj++) {
 
-						if (irank == rank_map[0][abs(adj_number[icube][iadj][direction_index])]) {
+					if (irank == rank_map[0][abs(adj_number[icube][iadj][direction_index])]) {
 
-							if ( adj_number[icube][1][direction_index] >= 0 )
+						if ( adj_number[icube][1][direction_index] >= 0 )
 
-								adj = rank_map[1][adj_number[icube][iadj][direction_index]];
+							adj = rank_map[1][adj_number[icube][iadj][direction_index]];
 
-							else 
-								adj = -rank_map[1][-adj_number[icube][iadj][direction_index]];
+						else 
+							adj = -rank_map[1][-adj_number[icube][iadj][direction_index]];
 
-							}
+						}
 
-						else adj = 0;
+					else adj = 0;
 
-						fprintf(fptr,"%d\t",adj);
+					fprintf(fptr,"%d\t",adj);
 						
 
-						}    // ---- for (int iadj = 1; iadj <= 4; iadj++) ---- //
+					}    // ---- for (int iadj = 1; iadj <= 4; iadj++) ---- //
 
 
-				}    // ---- for (int direction_index = 1; direction_index <= 6;  direction_index++) ---- //
+			}    // ---- for (int direction_index = 1; direction_index <= 6;  direction_index++) ---- //
 
-				fprintf(fptr,"\n");
-
-			}
-			
+			fprintf(fptr,"\n");
 
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
 		fprintf(fptr,"\n");
@@ -339,11 +328,11 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		rank_wall_cubes = 0;
 		#pragma omp parallel for reduction(+:rank_wall_cubes) 
-		for (icube = 1; icube < ncube; icube++) {
+		for (icube = cube_map[0][irank]; icube < cube_map[1][irank]; icube++) {
 
 			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
 
-				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) 
+				if (icube == wallcube[iwallcube]) 
 
 					rank_wall_cubes = rank_wall_cubes+1;
 
@@ -361,11 +350,11 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		fprintf(fptr,"Wall_cube_# >>\n");
 
-		for (icube = 1; icube < ncube; icube++) {
+		for (icube = cube_map[0][irank]; icube < cube_map[1][irank]; icube++) {
 
 			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
 
-				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) 
+				if (icube == wallcube[iwallcube]) 
 
 					fprintf(fptr,"%d\t",rank_map[1][wallcube[iwallcube]]);
 
