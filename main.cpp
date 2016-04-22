@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-
+#include <direct.h>
 
 #include "main.h"
 #include "prm.h"
@@ -27,6 +27,9 @@ int main(int argc, char **argv)
 	#include "BCM.h"
 	#include "Resolution.h"
 	#include "Array_Pre.h"    /**** allocate the memory ****/
+
+	
+	_mkdir(".\\MPI_files");
 
 	
 	BCM_Grid_Pre(cube_size_pre, csl_pre, Xcube_pre, Ycube_pre, Zcube_pre, adj_number_pre, wallcube_pre);

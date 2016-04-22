@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 
+
 #define min(a,b) (((a)<(b))?(a):(b)) 
 #define max(a,b) (((a)>(b))?(a):(b)) 
 
@@ -199,7 +200,7 @@ int (*cube_map)[np] = new int[2][np]
 	}    // ---- for (int irank = 0; irank < np; irank++) ---- //
 
 	
-	sprintf(file_name,"rank_map.dat");             
+	sprintf(file_name,".\\MPI_files\\rank_map.dat");             
 															   
 	fptr = fopen(file_name,"wb");   
 
@@ -263,12 +264,10 @@ int (*cube_map)[np] = new int[2][np]
 	
 	*/
 
-
-
 	for (int irank = np-1; irank > 0; irank--) {
 
 
-		sprintf(file_name,"BCMgrid""%0.5d"".dat",irank);    
+		sprintf(file_name,".\\MPI_files\\BCMgrid""%0.5d"".dat",irank);    
 		fptr = fopen(file_name,"wb"); 
 
 		fprintf(fptr,"BCM GridGene Output Data Version 1.4 - Single Run-Length\n");

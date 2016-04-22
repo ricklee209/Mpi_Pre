@@ -663,7 +663,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		
 	}
 
-	sprintf(file_name,"MPI_communication_table_in_turn.dat");    
+	sprintf(file_name,".\\MPI_files\\MPI_communication_table_in_turn.dat");    
 	fptr = fopen(file_name,"wb"); 
 
 	fprintf(fptr,"Number of Cubes for connection  >>\n");
@@ -843,7 +843,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
  // ============================== Reading the MPI_communication_table_in_turn ============================== //
 
-	sprintf(file_name,"MPI_communication_table_in_turn.dat");    
+	sprintf(file_name,".\\MPI_files\\MPI_communication_table_in_turn.dat");    
 	fptr = fopen(file_name,"r"); 
 
 	fscanf(fptr,"%[^\n]\n",str);
@@ -873,7 +873,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	for (int irank = 0; irank < np; irank ++) {
 
-		sprintf(file_name,"Communication_irank.""%05d"".dat",irank);             
+		sprintf(file_name,".\\MPI_files\\Communication_irank.""%05d"".dat",irank);             
 
 		fptr = fopen(file_name,"wb"); 
 
