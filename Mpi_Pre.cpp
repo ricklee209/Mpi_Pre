@@ -223,10 +223,12 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	}
 
 	/*
+	
 	#pragma omp parallel for private(\
 	fptr,icube,rank_cubes,adj,\
-	iwallcube,str,n_change,flag,ch_pos,rank_wall_cubes\
+	iwallcube,str,n_change,flag,ch_pos,rank_wall_cubes,fptr_runlength\
 	)
+	
 	*/
 
 
@@ -244,13 +246,17 @@ int (*rank_map)[ncube] = new int[2][ncube]
 // =================================== Cube size and corner information =================================== //
 
 		rank_cubes = 0;
+
+		#pragma omp parallel for reduction(+:rank_cubes) 
 		for (icube = 1; icube < ncube; icube++) {
 
 			if (irank == rank_map[0][icube]) rank_cubes = rank_cubes+1;
 
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
-
+		
+		#pragma omp barrier
 		fprintf(fptr,"%d\n",rank_cubes);    // ---- cubes number for each CPU ---- //
+
 
 
 
@@ -332,6 +338,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		fprintf(fptr,"#_of_wall_cubes >>\n");
 
 		rank_wall_cubes = 0;
+		#pragma omp parallel for reduction(+:rank_wall_cubes) 
 		for (icube = 1; icube < ncube; icube++) {
 
 			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
@@ -343,6 +350,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 			}
 
 		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+		#pragma omp barrier
 
 		fprintf(fptr,"%d\n",rank_wall_cubes);
 
