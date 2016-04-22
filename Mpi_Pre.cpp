@@ -1,0 +1,434 @@
+#include <omp.h>
+#include <stdlib.h> 
+#include <stdio.h>
+#include <math.h>
+#include <iostream>
+#include <string>
+
+#define min(a,b) (((a)<(b))?(a):(b)) 
+#define max(a,b) (((a)>(b))?(a):(b)) 
+
+#include "Resolution.h"
+
+void Mpi_Pre
+(
+// ============================================================================ //
+double (*cube_size) = new double[ncube],
+int (*csl) = new int[ncube],
+
+double (*Xcube) = new double[ncube],
+double (*Ycube) = new double[ncube],
+double (*Zcube) = new double[ncube],
+
+int (*adj_number)[5][7] = new int[ncube][5][7],
+
+int (*wallcube) = new int[ncube],
+
+int (*rank_map)[ncube] = new int[2][ncube]
+// ============================================================================ //
+)
+{
+	#include "BCM.h"
+	
+	
+	int n_edge = 0;
+
+	char file_name[100];
+
+
+	for (icube = 1; icube < ncube; icube++) {  
+
+		for (i = 1; i <= 6; i++ ) {
+
+			if (adj_number[icube][1][i] > 0 |
+				adj_number[icube][2][i] > 0 |
+				adj_number[icube][3][i] > 0 |
+				adj_number[icube][4][i] > 0) {
+
+					if (adj_number[icube][1][i] != adj_number[icube][2][i] &
+						adj_number[icube][1][i] != adj_number[icube][3][i] &
+						adj_number[icube][1][i] != adj_number[icube][4][i]) {
+							
+							
+							if(adj_number[icube][1][i] > icube) n_edge=n_edge+1;
+							if(adj_number[icube][2][i] > icube) n_edge=n_edge+1;
+							if(adj_number[icube][3][i] > icube) n_edge=n_edge+1;
+							if(adj_number[icube][4][i] > icube) n_edge=n_edge+1;
+							
+
+							//n_edge=n_edge+4;
+
+						}
+
+					else if(adj_number[icube][1][i] > icube) n_edge=n_edge+1;
+						//n_edge = n_edge+1;
+
+			}
+
+		}    // ---- for (i = 1; i <= 6; i++ ) ---- //
+
+	}// ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+	printf("n_edge = %d\n",n_edge);
+
+
+	FILE *fptr;
+
+	fptr = fopen("metisfn.dat","wb"); 
+
+	fprintf(fptr,"%d\t%d\n",ncube-1,n_edge);    // ---- Metis format on line 1 ---- //
+
+	int iedge = 0;
+
+	
+	for (icube = 1; icube < ncube; icube++) {  
+
+		for (i = 1; i <= 6; i++ ) {
+
+			if (adj_number[icube][1][i] > 0 |
+				adj_number[icube][2][i] > 0 |
+				adj_number[icube][3][i] > 0 |
+				adj_number[icube][4][i] > 0) {
+
+					if (adj_number[icube][1][i] != adj_number[icube][2][i] &
+						adj_number[icube][1][i] != adj_number[icube][3][i] &
+						adj_number[icube][1][i] != adj_number[icube][4][i]) {
+
+						  fprintf(fptr,"%d\t%d\t%d\t%d\t",abs(adj_number[icube][1][i]),abs(adj_number[icube][2][i]),abs(adj_number[icube][3][i]),abs(adj_number[icube][4][i]));
+
+						}
+
+					else {
+
+						  fprintf(fptr,"%d\t",abs(adj_number[icube][1][i]));
+
+						}
+
+			}
+
+		}    // ---- for (i = 1; i <= 6; i++ ) ---- //
+
+		fprintf(fptr,"\n");
+
+	}// ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+	fclose(fptr);    // ---- close metis file ---- //
+
+
+	//sprintf(file_name,"gpmetis.exe metisfn.dat ""%d",np);
+
+	//system(file_name);    // ---- creating the metis file ---- //
+
+
+
+
+// ---- reading the metis file to build rank_map ---- //
+
+// ---- rank_map [Cubes(Global)] [Ranks] [Cubes(local)] ---- //
+
+// =========================================================== //
+															   
+	sprintf(file_name,"metisfn.dat.part.""%d",np);             
+	
+	//sprintf(file_name,"metisfn_self.dat");        
+				
+	fptr = fopen(file_name,"r");                               
+	                                                          
+	for (icube = 1; icube < ncube; icube++) {
+	
+		fscanf(fptr,"%d\n",&rank_map[0][icube]);
+
+		//printf("%d\t",rank_map[icube]);
+	
+		}
+
+	fclose(fptr);    // ---- close metis file ---- //
+
+	int rank_cubes = 0;
+	int rank_wall_cubes = 0;
+
+	for (int irank = 0; irank < np; irank++) {
+
+		rank_cubes = 0;
+
+		for (icube = 1; icube < ncube; icube++) {
+
+
+			if (irank == rank_map[0][icube]) {
+				
+				rank_cubes = rank_cubes+1;
+
+				rank_map[1][icube] = rank_cubes;
+
+				}
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+	}    // ---- for (int irank = 0; irank < np; irank++) ---- //
+
+	
+	sprintf(file_name,"rank_map.dat");             
+															   
+	fptr = fopen(file_name,"wb");   
+
+	fprintf(fptr,"Cube_N(global)\t CPU_rank\t Cube_N(local)\n");
+	                                                       
+	for (icube = 1; icube < ncube; icube++) {
+
+		fprintf(fptr,"%d\t%d\t%d\n",icube,rank_map[0][icube],rank_map[1][icube]);
+
+		}
+		
+	fclose(fptr);    // ---- close rank_map.dat ---- //
+	
+
+// =========================================================== //	
+
+
+
+
+	FILE *fptr_runlength;
+	fptr_runlength = fopen("BCM_Grid.dat","r");
+
+	char runlength[1024] = "JKL_runlength for cell information >>";
+	char str[1024];
+
+
+
+	int n_change, flag, ch_pos;
+
+	int count_index = 0;
+
+	int Ncell = NcubeX*NcubeY*NcubeZ;
+
+	int adj;
+
+	//printf("%d\n",strcmp(str,runlength));
+	//fscanf(fptr_runlength,"%d\n%d\n%d\n",&i,&j,&k);
+	//printf("%d\n%d\n%d\n",i,j,k);
+
+	#pragma omp parallel for private(\
+	fptr,icube,rank_cubes,adj,\
+	iwallcube,str,n_change,flag,ch_pos,fptr_runlength,rank_wall_cubes\
+	)
+
+	for (int irank = 0; irank < np; irank++) {
+
+
+		sprintf(file_name,"BCMgrid""%0.5d"".dat",irank);    
+		fptr = fopen(file_name,"wb"); 
+
+		fprintf(fptr,"BCM GridGene Output Data Version 1.4 - Single Run-Length\n");
+		fprintf(fptr,"#_of_cubes in the computational region >>\n");
+
+
+// =================================== Cube size and corner information =================================== //
+
+		rank_cubes = 0;
+		for (icube = 1; icube < ncube; icube++) {
+
+			if (irank == rank_map[0][icube]) rank_cubes = rank_cubes+1;
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+		fprintf(fptr,"%d\n",rank_cubes);    // ---- cubes number for each CPU ---- //
+
+
+
+
+		fprintf(fptr,"size_&_left-corner_location (x,y,z) of cube(i) >>\n");
+
+		for (icube = 1; icube < ncube; icube++) {
+
+			if (irank == rank_map[0][icube]) {
+
+				fprintf(fptr,"%.9f\t%.9f\t%.9f\t%.9f\n",cube_size[icube],Xcube[icube],Ycube[icube],Zcube[icube]);
+
+			}
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+// =================================== Cube size and corner information =================================== //
+
+
+
+
+// =================================== Cube neighbor information =================================== //
+
+		fprintf(fptr,"Cube_neighboring_information >>\n");
+
+		i = 0;
+		for (icube = 1; icube < ncube; icube++) {
+
+			if (irank == rank_map[0][icube]) {
+
+
+				for (int direction_index = 1; direction_index <= 6;  direction_index++) {    
+
+
+
+					for (int iadj = 1; iadj <= 4; iadj++) {
+
+						if (irank == rank_map[0][abs(adj_number[icube][iadj][direction_index])]) {
+
+							if ( adj_number[icube][1][direction_index] >= 0 )
+
+								adj = rank_map[1][adj_number[icube][iadj][direction_index]];
+
+							else 
+								adj = -rank_map[1][-adj_number[icube][iadj][direction_index]];
+
+							}
+
+						else adj = 0;
+
+						fprintf(fptr,"%d\t",adj);
+						
+
+						}    // ---- for (int iadj = 1; iadj <= 4; iadj++) ---- //
+
+
+				}    // ---- for (int direction_index = 1; direction_index <= 6;  direction_index++) ---- //
+
+				fprintf(fptr,"\n");
+
+			}
+			
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+		fprintf(fptr,"\n");
+
+// =================================== Cube neighbor information =================================== //
+
+
+
+
+		fprintf(fptr,"#_of_cells on a cube_edge >>\n");
+		fprintf(fptr,"%d\n",NcubeX);
+
+
+
+
+// =================================== Wall cube number =================================== //
+
+		fprintf(fptr,"#_of_wall_cubes >>\n");
+
+		rank_wall_cubes = 0;
+		for (icube = 1; icube < ncube; icube++) {
+
+			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
+
+				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) 
+
+					rank_wall_cubes = rank_wall_cubes+1;
+
+			}
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+		fprintf(fptr,"%d\n",rank_wall_cubes);
+
+// =================================== Wall cube number =================================== //
+
+
+
+
+		fprintf(fptr,"Wall_cube_# >>\n");
+
+		for (icube = 1; icube < ncube; icube++) {
+
+			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
+
+				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) 
+
+					fprintf(fptr,"%d\t",rank_map[1][wallcube[iwallcube]]);
+
+			}
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+		fprintf(fptr,"\n");
+
+
+
+
+// =================================== Run length information =================================== //
+
+		fprintf(fptr,"JKL_runlength for cell information >>\n");
+
+		
+
+		for (icube = 1; icube < ncube; icube++) {
+
+			
+
+			for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
+
+
+				if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) {
+
+
+					rewind(fptr_runlength);
+					fscanf(fptr_runlength,"%[^\n]\n",str);
+					while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
+
+
+					
+					for (int count = 1; count <= iwallcube; count++) {
+
+
+						fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
+						fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
+
+
+						// -- ???? -- //
+						if (count < iwallcube)
+						for (int iflag = 1; iflag <= n_change; iflag++) {
+
+							fscanf(fptr_runlength,"%d\n",&ch_pos);
+
+						}
+						// -- ???? -- //
+
+
+					}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
+
+					fprintf(fptr,"%d\t",n_change);
+					fprintf(fptr,"%d\t",flag);
+
+					for (int iflag = 1; iflag <= n_change; iflag++) {
+						
+						fscanf(fptr_runlength,"%d\t",&ch_pos);
+
+						fprintf(fptr,"%d\t",ch_pos);
+
+						//printf("%d\t",ch_pos);
+						
+					}
+
+					fprintf(fptr,"\n");
+
+				}    // ---- if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) ---- //
+
+
+			}
+
+		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+
+		fprintf(fptr_runlength,"\n");
+
+// =================================== Run length information =================================== //
+
+		
+		fclose(fptr);    // ---- close BCMgrid file ---- //    
+
+	}    // ---- for (int irank = 0; irank < np; irank++) ---- //
+
+
+
+	fclose(fptr_runlength);    // ---- close original BCMgrid file ---- 
+
+
+
+
+}
+
