@@ -130,21 +130,45 @@ int (*cube_map)[np] = new int[2][np]
 
 // =========================================================== //
 															   
-	sprintf(file_name,"metisfn.dat.part.""%d",np);             
-	
-	//sprintf(file_name,"metisfn_self.dat");        
-				
-	fptr = fopen(file_name,"r");                               
-	                                                          
-	for (icube = 1; icube < ncube; icube++) {
-	
-		fscanf(fptr,"%d\n",&rank_map[0][icube]);
+	//sprintf(file_name,"metisfn.dat.part.""%d",np);             
+	//
+	////sprintf(file_name,"metisfn_self.dat");        
+	//			
+	//fptr = fopen(file_name,"r");                               
+	//                                                          
+	//for (icube = 1; icube < ncube; icube++) {
+	//
+	//	fscanf(fptr,"%d\n",&rank_map[0][icube]);
 
-		//printf("%d\t",rank_map[icube]);
-	
+	//	//printf("%d\t",rank_map[icube]);
+	//
+	//	}
+
+	//fclose(fptr);    // ---- close metis file ---- //
+
+
+	int Xdv = int( (ncube-1)/np);
+	int Xr =  (ncube-1)-Xdv*np;
+
+	for (int irank = 0; irank < np; irank++) {
+
+		if(irank < Xr) {
+
+			for (int i_mts = irank*(Xdv+1)+1; i_mts < irank*(Xdv+1)+Xdv+2; i_mts++ )
+				rank_map[0][i_mts] = (np-1)-irank;
+
 		}
+		else {
 
-	fclose(fptr);    // ---- close metis file ---- //
+			for (int i_mts =irank*Xdv+Xr+1; i_mts < irank*Xdv+Xr+Xdv+1; i_mts++ )
+			rank_map[0][i_mts] = (np-1)-irank;
+
+		}
+	}
+
+
+
+
 
 	int rank_cubes = 0;
 	int rank_wall_cubes = 0;
