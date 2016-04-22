@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	//Z_periodic_condition(NZbc_l, NZbc_u, Zmin, Zmax, Zbc_u, Zbc_l, cube_size_pre, Xcube_pre, Ycube_pre, Zcube_pre, adj_number_pre);
 
 
-	Mpi_Pre(cube_size_pre, csl_pre, Xcube_pre, Ycube_pre, Zcube_pre, adj_number_pre, wallcube_pre, rank_map);
+	Mpi_Pre(cube_size_pre, csl_pre, Xcube_pre, Ycube_pre, Zcube_pre, adj_number_pre, wallcube_pre, rank_map, cube_map);
 
 	Communication_table(cube_size_pre, csl_pre, Xcube_pre, Ycube_pre, Zcube_pre, adj_number_pre, wallcube_pre, rank_map);
 
