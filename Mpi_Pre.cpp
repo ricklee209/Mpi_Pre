@@ -213,12 +213,12 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	}
 
-/*
+	/*
 	#pragma omp parallel for private(\
 	fptr,icube,rank_cubes,adj,\
-	iwallcube,str,n_change,flag,ch_pos,fptr_runlength,rank_wall_cubes\
-	)*/
-
+	iwallcube,str,n_change,flag,ch_pos,rank_wall_cubes\
+	)
+	*/
 
 
 	for (int irank = 0; irank < np; irank++) {
@@ -365,75 +365,52 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 		
 
-		for (icube = 1; icube < ncube; icube++) {
-
-			if (irank == rank_map[0][icube]) {
-
-				for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
+		for (iwallcube = 1; iwallcube < n_wallcube; iwallcube++) {
 
 
-					if (icube == wallcube[iwallcube]) {
+			if (irank == rank_map[0][wallcube[iwallcube]]) {
 
+				rewind(fptr_runlength);
 
-						rewind(fptr_runlength);
+				fscanf(fptr_runlength,"%[^\n]\n",str);
 
-						fscanf(fptr_runlength,"%[^\n]\n",str);
-
-						while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
+				while( strcmp(str,runlength) != 0)  { fscanf(fptr_runlength,"%[^\n]\n",str); }
 
 
 
-						for (int count = 1; count <= iwallcube; count++) {
+				for (int count = 1; count <= iwallcube; count++) {
 
 
-							fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
-							fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
+					fscanf(fptr_runlength,"%d\n",&n_change);    // ---- how many cells needed to be changed the flag ---- //
+					fscanf(fptr_runlength,"%d\n",&flag);    // ---- the first cell's flag ---- //
 
 
+					for (int iflag = 1; iflag <= n_change; iflag++) {
+
+						fscanf(fptr_runlength,"%d\n",&tmp_runlength[iflag]);
+
+					}
+
+				}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
+
+				fprintf(fptr,"%d\t",n_change);
+				fprintf(fptr,"%d\t",flag);
 
 
-							for (int iflag = 1; iflag <= n_change; iflag++) {
+				for (int iflag = 1; iflag <= n_change; iflag++) {
 
-								fscanf(fptr_runlength,"%d\n",&tmp_runlength[iflag]);
+					fprintf(fptr,"%d\t",tmp_runlength[iflag]);
 
-							}
-
-
-							// -- ???? -- //
-							/*if (count < iwallcube)
-							for (int iflag = 1; iflag <= n_change; iflag++) {
-
-							fscanf(fptr_runlength,"%d\n",&ch_pos);
-
-							}*/
-
-							// -- ???? -- //
-
-
-						}    // ---- for (int count = 1; count <= iwallcube; iwallcube++) ---- // 
-
-						fprintf(fptr,"%d\t",n_change);
-						fprintf(fptr,"%d\t",flag);
-
-
-						for (int iflag = 1; iflag <= n_change; iflag++) {
-
-							fprintf(fptr,"%d\t",tmp_runlength[iflag]);
-
-							tmp_runlength[iflag] = 0;
-
-						}
-
-
-						fprintf(fptr,"\n");
-
-					}    // ---- if (irank == rank_map[0][icube] & icube == wallcube[iwallcube]) ---- //
+					tmp_runlength[iflag] = 0;
 
 				}
 
-			}
 
-		}    // ---- for (icube = 1; icube < ncube; icube++) ---- //
+				fprintf(fptr,"\n");
+
+			}    // ---- if (icube == wallcube[iwallcube]) { ---- //
+
+		}
 
 		fprintf(fptr_runlength,"\n");
 
@@ -444,6 +421,8 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	}    // ---- for (int irank = 0; irank < np; irank++) ---- //
 
+	
+	#pragma omp barrier
 
 
 	fclose(fptr_runlength);    // ---- close original BCMgrid file ---- 
