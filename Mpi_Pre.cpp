@@ -264,7 +264,7 @@ int (*cube_map)[np] = new int[2][np]
 	
 	*/
 
-	for (int irank = np-1; irank > 0; irank--) {
+	for (int irank = np-1; irank >= 0; irank--) {
 
 
 		sprintf(file_name,".\\MPI_files\\BCMgrid""%0.5d"".dat",irank);    
