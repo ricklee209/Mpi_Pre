@@ -6,6 +6,42 @@
 #include <string>
 #include <omp.h>
 
+
+
+struct Prop
+{
+
+	int CPU;
+	int Cube;
+	int CPU_neig;
+	int Cube_neig;
+	int Dir;
+	int Adj;
+	int Inter;
+};
+
+struct Array
+{
+	Prop *content;
+	unsigned int size;
+};
+
+
+int compare_Inter( const void *a, const void *b )
+{
+
+	return ( (Prop*)a)->Inter > ( (Prop*)b)->Inter ?1:-1;
+
+};
+
+int compare_CPU( const void *a, const void *b )
+{
+
+	return ( (Prop*)a)->CPU > ( (Prop*)b)->CPU ?1:-1;
+
+};
+
+
 #define min(a,b) (((a)<(b))?(a):(b)) 
 #define max(a,b) (((a)>(b))?(a):(b)) 
 
@@ -583,6 +619,13 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	int nadj;
 	int MPI_Nadj = count_index+1;
 
+
+	Array MPI_table;
+
+	MPI_table.size = MPI_Nadj;
+
+	MPI_table.content = new Prop[MPI_table.size];
+
 	int (*MPI_cube_) = new int[MPI_Nadj];
 	int (*MPI_cpu_) = new int[MPI_Nadj];
 
@@ -611,6 +654,10 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	int index_0 = 0;
 	int index0_ = 0;
 
+	int iindex0 = 0;
+	int iindex_0 = 0;
+	int iindex0_ = 0;
+
 	int count_CPU = 0;
 
 	int t1,t2,t3,t4,t5,t6,t7;
@@ -622,10 +669,44 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	fscanf(fptr,"%[^\n]\n",str);
 
 	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
+		/*
+		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",&MPI_table.content[nadj].Cube, \
+												   &MPI_table.content[nadj].CPU, \
+												   &MPI_table.content[nadj].Cube_neig,\
+												   &MPI_table.content[nadj].CPU_neig, \
+												   &MPI_table.content[nadj].Dir, \
+												   &MPI_table.content[nadj].Adj, \
+												   &MPI_table.content[nadj].Inter);
+		
+		if(MPI_table.content[nadj].Inter == 0) MPI_table.content[nadj-1].Inter = 100;
+		if(MPI_table.content[nadj].Inter == -1) MPI_table.content[nadj-1].Inter = 10;
+		*/
 
-		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",&MPI_cube[nadj], &MPI_cpu[nadj], &MPI_cube_adj[nadj], &MPI_cpu_adj[nadj], &MPI_direction[nadj], &MPI_adjn[nadj], &MPI_interface[nadj]);
 
-		//printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",MPI_cube[nadj], MPI_cpu[nadj], MPI_cube_adj[nadj], MPI_cpu_adj[nadj], MPI_direction[nadj], MPI_adjn[nadj], MPI_interface[nadj]);
+		
+		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n", &t1, &t2, &t3, &t4, &t5, &t6, &t7);
+
+		if(t7 == 0) t7 = 100;
+		if(t7 == -1) t7 = 10;
+
+		MPI_table.content[nadj].Cube = t1;
+		MPI_table.content[nadj].CPU = t2;
+		MPI_table.content[nadj].Cube_neig = t3;
+		MPI_table.content[nadj].CPU_neig = t4;
+		MPI_table.content[nadj].Dir = t5;
+		MPI_table.content[nadj].Adj = t6;
+		MPI_table.content[nadj].Inter = t7;
+		
+		/*
+		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",MPI_table.content[nadj].CPU, \
+			                                  MPI_table.content[nadj].Cube, \
+											  MPI_table.content[nadj].CPU_neig, \
+											  MPI_table.content[nadj].Cube_neig, \
+											  MPI_table.content[nadj].Dir, \
+											  MPI_table.content[nadj].Adj, \
+											  MPI_table.content[nadj].Inter);
+		*/
+
 		
 	}
 
@@ -633,36 +714,69 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	fclose(fptr);
 
 
-	 
+	qsort( MPI_table.content, MPI_table.size, sizeof( Prop ), compare_CPU );
 
 
-// ------------------------------- The same size adjancent ------------------------------- //
+	#pragma omp parallel for reduction(+:index0, index0_) 
 
-	for (int irank = 0; irank < np; irank ++) {
+	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
 
-		for (nadj = 1; nadj < MPI_Nadj; nadj++) {
-	
-			if (irank == MPI_cpu[nadj] && MPI_interface[nadj] == 0) {
+		if(MPI_table.content[nadj].Inter == 100) index0 = index0 + 1;
+		if(MPI_table.content[nadj].Inter == 1) index0_ = index0_ + 1;
 
-				index0 = index0+1;
-
-				MPI_cube_[index0] = MPI_cube[nadj];
-				MPI_cpu_[index0] = MPI_cpu[nadj];
-
-				MPI_cube_adj_[index0] = MPI_cube_adj[nadj];
-				MPI_cpu_adj_[index0] = MPI_cpu_adj[nadj];
-
-				MPI_direction_[index0] = MPI_direction[nadj];
-				MPI_interface_[index0] = MPI_interface[nadj];
-
-				MPI_adjn_[index0] = MPI_adjn[nadj];
-
-			}    // ---- if (myid == MPI_cpu[nadj]) ---- //
-
-		}    // ---- for (nadj = 1; nadj < MPI_Nadj; nadj++) ---- //
-		
 	}
 
+	index_0 = MPI_Nadj-index0-index0_;
+
+	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
+		
+		if(MPI_table.content[nadj].Inter == 100) {
+			
+			iindex0 = iindex0 + 1;
+
+			 MPI_cpu_[iindex0] = MPI_table.content[nadj].CPU;
+		     MPI_cube_[iindex0] = MPI_table.content[nadj].Cube;
+		     MPI_cpu_adj_[iindex0] = MPI_table.content[nadj].CPU_neig;
+		     MPI_cube_adj_[iindex0] = MPI_table.content[nadj].Cube_neig;
+		     MPI_direction_[iindex0] = MPI_table.content[nadj].Dir;
+		     MPI_adjn_[iindex0] = MPI_table.content[nadj].Adj;
+		     MPI_interface_[iindex0] = MPI_table.content[nadj].Inter;
+
+		    }
+
+		
+		if(MPI_table.content[nadj].Inter == 10) {
+			
+			iindex_0 = iindex_0 + 1;;
+
+			 MPI_cpu_[index0 + iindex_0] = MPI_table.content[nadj].CPU;
+		     MPI_cube_[index0 + iindex_0] = MPI_table.content[nadj].Cube;
+		     MPI_cpu_adj_[index0 + iindex_0] = MPI_table.content[nadj].CPU_neig;
+		     MPI_cube_adj_[index0 + iindex_0] = MPI_table.content[nadj].Cube_neig;
+		     MPI_direction_[index0 + iindex_0] = MPI_table.content[nadj].Dir;
+		     MPI_adjn_[index0 + iindex_0] = MPI_table.content[nadj].Adj;
+		     MPI_interface_[index0 + iindex_0] = MPI_table.content[nadj].Inter;
+
+		    }
+
+		
+		
+		if(MPI_table.content[nadj].Inter == 1) {
+			
+			iindex0_ = iindex0_ + 1;;
+
+			 MPI_cpu_[index0+index_0+iindex0_] = MPI_table.content[nadj].CPU;
+		     MPI_cube_[index0+index_0+iindex0_] = MPI_table.content[nadj].Cube;
+		     MPI_cpu_adj_[index0+index_0+iindex0_] = MPI_table.content[nadj].CPU_neig;
+		     MPI_cube_adj_[index0+index_0+iindex0_] = MPI_table.content[nadj].Cube_neig;
+		     MPI_direction_[index0+index_0+iindex0_] = MPI_table.content[nadj].Dir;
+		     MPI_adjn_[index0+index_0+iindex0_] = MPI_table.content[nadj].Adj;
+		     MPI_interface_[index0+index_0+iindex0_] = MPI_table.content[nadj].Inter;
+
+		    }
+			
+	}
+	
 	sprintf(file_name,".\\MPI_files\\MPI_communication_table_in_turn.dat");    
 	fptr = fopen(file_name,"wb"); 
 
@@ -671,171 +785,25 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	fprintf(fptr,"CPU\t Cube\t CPU_neig\t Cube_neig\t Dir\t Adj\t Inter\n");
 
-	for (int irank = 0; irank < np; irank ++) {
 
-		for (int iirank = 0; iirank < np; iirank ++) {
+	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
 
-#pragma omp parallel for
-			for (nadj = 1; nadj < index0+1; nadj++) {
-
-				if (irank != iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) {
-
-					t1 = MPI_cpu_[nadj];
-					t2 = MPI_cube_[nadj];
-					t3 = MPI_cpu_adj_[nadj];
-					t4 = MPI_cube_adj_[nadj];
-					t5 = MPI_direction_[nadj];
-					t6 = MPI_adjn_[nadj];
-					t7 = MPI_interface_[nadj];
+		t1 = MPI_cpu_[nadj];
+		t2 = MPI_cube_[nadj];
+		t3 = MPI_cpu_adj_[nadj];
+		t4 = MPI_cube_adj_[nadj];
+		t5 = MPI_direction_[nadj];
+		t6 = MPI_adjn_[nadj];
+		t7 = MPI_interface_[nadj];
 					
-					fprintf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6, t7);
 
-					//printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6, t7);
+		if(t7 == 100) t7 = 0;
+		if(t7 == 10) t7 = -1;
 
 
-				}    // ---- if (irank < iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) ---- //
-
-			}
-#pragma omp barrier
-
-		}    // ---- for (int iirank = 0; iirank < np; iirank ++) ---- //
+		fprintf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6, t7);
 
 	}
-
-// ------------------------------- The same size adjancent ------------------------------- //
-
-
-
-
-// ------------------------------- Small to big size -1 ------------------------------- //
-
-
-	
-	for (int irank = 0; irank < np; irank ++) {
-
-		for (nadj = 1; nadj < MPI_Nadj; nadj++) {
-	
-			if (irank == MPI_cpu[nadj] && MPI_interface[nadj] == -1) {
-
-				index_0 = index_0+1;
-
-				MPI_cube_[index_0] = MPI_cube[nadj];
-				MPI_cpu_[index_0] = MPI_cpu[nadj];
-
-				MPI_cube_adj_[index_0] = MPI_cube_adj[nadj];
-				MPI_cpu_adj_[index_0] = MPI_cpu_adj[nadj];
-
-				MPI_direction_[index_0] = MPI_direction[nadj];
-				MPI_interface_[index_0] = MPI_interface[nadj];
-
-				MPI_adjn_[index_0] = MPI_adjn[nadj];
-
-			}    // ---- if (myid == MPI_cpu[nadj]) ---- //
-
-		}    // ---- for (nadj = 1; nadj < MPI_Nadj; nadj++) ---- //
-		
-	}
-	
-	for (int irank = 0; irank < np; irank ++) {
-
-		for (int iirank = 0; iirank < np; iirank ++) {
-
-#pragma omp parallel for
-			for (nadj = 1; nadj < index_0+1; nadj++) {
-
-				if (irank != iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) {
-
-					
-					t1 = MPI_cpu_[nadj];
-					t2 = MPI_cube_[nadj];
-					t3 = MPI_cpu_adj_[nadj];
-					t4 = MPI_cube_adj_[nadj];
-					t5 = MPI_direction_[nadj];
-					t6 = MPI_adjn_[nadj];
-					t7 = MPI_interface_[nadj];
-					
-					fprintf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6, t7);
-
-					//printf("%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6);
-
-				}    // ---- if (irank != iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) ---- //
-
-			}
-#pragma omp barrier
-
-
-		}    // ---- for (int iirank = 0; iirank < np; iirank ++) ---- //
-
-	}
-
-
-
-// ------------------------------- Small to big size -1 ------------------------------- //
-
-
-
-// ------------------------------- Big to small size +1 ------------------------------- //
-
-
-	
-	for (int irank = 0; irank < np; irank ++) {
-
-		for (nadj = 1; nadj < MPI_Nadj; nadj++) {
-	
-			if (irank == MPI_cpu[nadj] && MPI_interface[nadj] == 1) {
-
-				index0_ = index0_+1;
-
-				MPI_cube_[index0_] = MPI_cube[nadj];
-				MPI_cpu_[index0_] = MPI_cpu[nadj];
-
-				MPI_cube_adj_[index0_] = MPI_cube_adj[nadj];
-				MPI_cpu_adj_[index0_] = MPI_cpu_adj[nadj];
-
-				MPI_direction_[index0_] = MPI_direction[nadj];
-				MPI_interface_[index0_] = MPI_interface[nadj];
-
-				MPI_adjn_[index0_] = MPI_adjn[nadj];
-
-			}    // ---- if (myid == MPI_cpu[nadj]) ---- //
-
-		}    // ---- for (nadj = 1; nadj < MPI_Nadj; nadj++) ---- //
-		
-	}
-	
-	for (int irank = 0; irank < np; irank ++) {
-
-		for (int iirank = 0; iirank < np; iirank ++) {
-
-#pragma omp parallel for
-			for (nadj = 1; nadj < index0_+1; nadj++) {
-
-				if (irank != iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) {
-
-					t1 = MPI_cpu_[nadj];
-					t2 = MPI_cube_[nadj];
-					t3 = MPI_cpu_adj_[nadj];
-					t4 = MPI_cube_adj_[nadj];
-					t5 = MPI_direction_[nadj];
-					t6 = MPI_adjn_[nadj];
-					t7 = MPI_interface_[nadj];
-					
-					fprintf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6, t7);
-
-					//printf("%d\t%d\t%d\t%d\t%d\t%d\n",t1, t2, t3, t4, t5, t6);
-
-				}    // ---- if (irank != iirank & irank == MPI_cpu_[nadj] & iirank == MPI_cpu_adj_[nadj]) ---- //
-
-			}
-#pragma omp barrier
-
-		}    // ---- for (int iirank = 0; iirank < np; iirank ++) ---- //
-
-	}
-
-
-
-// ------------------------------- Big to small size +1 ------------------------------- //
 
 	fclose(fptr);
 
@@ -853,8 +821,6 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
 
 		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n", &MPI_cpu[nadj], &MPI_cube[nadj], &MPI_cpu_adj[nadj], &MPI_cube_adj[nadj], &MPI_direction[nadj], &MPI_adjn[nadj], &MPI_interface[nadj]);
-
-	    //printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",MPI_cpu[nadj], MPI_cube[nadj], MPI_cpu_adj[nadj], MPI_cube_adj[nadj], MPI_direction[nadj], MPI_adjn[nadj],MPI_interface[nadj]);
 
 	}    // ---- for (nadj = 1; nadj < index0+1; nadj++) ---- //
 
@@ -1671,6 +1637,8 @@ fprintf(fptr,"\n\n");
 	//printf("%d\n",index0+index_+_index);
 
 	//printf("%d\n",_index);
+
+	delete []MPI_table.content;
 
 	delete []MPI_cube_;
 	delete []MPI_cpu_;
