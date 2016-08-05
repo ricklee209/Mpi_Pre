@@ -698,9 +698,9 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		MPI_table.content[nadj].Adj = t6;
 		MPI_table.content[nadj].Inter = t7;
 
-		if(t7 == 1)  MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 2*np*np;
+		if(t7 == 1)  MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 4*np*np;
 		if(t7 == 0)  MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np );
-		if(t7 == -1) MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 4*np*np;
+		if(t7 == -1) MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 2*np*np;
 
 
 		
