@@ -671,24 +671,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 
 	for (nadj = 0; nadj < MPI_Nadj-1; nadj++) {
 		
-		/*
-		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n",&MPI_table.content[nadj-1].Cube, \
-												   &MPI_table.content[nadj-1].CPU, \
-												   &MPI_table.content[nadj-1].Cube_neig,\
-												   &MPI_table.content[nadj-1].CPU_neig, \
-												   &MPI_table.content[nadj-1].Dir, \
-												   &MPI_table.content[nadj-1].Adj, \
-												   &MPI_table.content[nadj-1].Inter);
-		
-		if(MPI_table.content[nadj-1].Inter == 0) MPI_table.content[nadj-1].i_sort = 100;
-		if(MPI_table.content[nadj-1].Inter == -1) MPI_table.content[nadj-1].i_sort = 10;
-		*/
-
-
-		
 		fscanf(fptr,"%d\t%d\t%d\t%d\t%d\t%d\t%d\n", &t1, &t2, &t3, &t4, &t5, &t6, &t7);
-
-		
 
 		MPI_table.content[nadj].Cube = t1;
 		MPI_table.content[nadj].CPU = t2;
@@ -698,60 +681,30 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		MPI_table.content[nadj].Adj = t6;
 		MPI_table.content[nadj].Inter = t7;
 
-		if(t7 == 1)  MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 4*np*np;
-		if(t7 == 0)  MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np );
-		if(t7 == -1) MPI_table.content[nadj].i_sort = ( t4 + (t2+1)*np ) + 2*np*np;
-
-
-		
-		/*
-		printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",MPI_table.content[nadj].CPU, \
-			                                  MPI_table.content[nadj].Cube, \
-											  MPI_table.content[nadj].CPU_neig, \
-											  MPI_table.content[nadj].Cube_neig, \
-											  MPI_table.content[nadj].Dir, \
-											  MPI_table.content[nadj].Adj, \
-											  MPI_table.content[nadj].Inter);
-		*/
-
-		
 	}
-
 	
 	fclose(fptr);
 
-	/*
-	#pragma omp parallel for
-	for (nadj = 0; nadj < MPI_Nadj-1; nadj++) {
 
-		MPI_cube_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].Cube;
-		MPI_cpu_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].CPU;
-		MPI_cube_adj_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].Cube_neig;
-		MPI_cpu_adj_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].CPU_neig;
-		MPI_direction_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].Dir;
-		MPI_adjn_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].Adj;
-		MPI_interface_[nadj+1] = MPI_table.content[MPI_Nadj-2-nadj].Inter;
-
-	}
-
-
-	#pragma omp parallel for
-	for (nadj = 0; nadj < MPI_Nadj-1; nadj++) {
-
-		MPI_table.content[nadj].Cube = MPI_cube_[nadj+1];
-		MPI_table.content[nadj].CPU = MPI_cpu_[nadj+1];
-		MPI_table.content[nadj].Cube_neig = MPI_cube_adj_[nadj+1];
-		MPI_table.content[nadj].CPU_neig = MPI_cpu_adj_[nadj+1];
-		MPI_table.content[nadj].Dir = MPI_direction_[nadj+1];
-		MPI_table.content[nadj].Adj = MPI_adjn_[nadj+1];
-		MPI_table.content[nadj].Inter = MPI_interface_[nadj+1];
-
-	}
-	*/
 	
+	
+	for (nadj = 0; nadj < MPI_Nadj-1; nadj++) {
+
+		
+		t1 = MPI_table.content[nadj].Cube;
+		t2 = MPI_table.content[nadj].CPU;
+		t4 = MPI_table.content[nadj].CPU_neig;
+		t7 = MPI_table.content[nadj].Inter;
+
+		
+		if(t7 == 1)  MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np ) + 4*np*np*np;
+		if(t7 == 0)  MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np );
+		if(t7 == -1) MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np ) + 2*np*np*np;
+		
+	}
+
 	qsort( MPI_table.content, MPI_table.size, sizeof( Prop ), compare_CPU );
-
-
+	
 
 
 	#pragma omp parallel for reduction(+:index0, index0_) 
