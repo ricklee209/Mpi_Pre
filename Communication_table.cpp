@@ -614,8 +614,6 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	fclose(fptr);    // ---- close communication_table.dat ---- //
 
 
-
-
 	char str[1024];
 	int nadj;
 	int MPI_Nadj = count_index+1;
@@ -697,9 +695,9 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		t7 = MPI_table.content[nadj].Inter;
 
 		
-		if(t7 == 1)  MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np ) + 4*np*np*np;
-		if(t7 == 0)  MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np );
-		if(t7 == -1) MPI_table.content[nadj].i_sort = ( t1 + (t4+1)*np + (t2+1)*np*np ) + 2*np*np*np;
+		if(t7 == 1)  MPI_table.content[nadj].i_sort = (t4+1) + (t2+1)*np + 4*np*np;
+		if(t7 == 0)  MPI_table.content[nadj].i_sort = (t4+1) + (t2+1)*np;
+		if(t7 == -1) MPI_table.content[nadj].i_sort = (t4+1) + (t2+1)*np + 2*np*np;
 		
 	}
 
@@ -717,7 +715,7 @@ int (*rank_map)[ncube] = new int[2][ncube]
 	}
 
 
-	index_0 = MPI_Nadj-index0-index0_;
+	index_0 = MPI_Nadj-index0-index0_-1;
 
 	for (nadj = 1; nadj < MPI_Nadj; nadj++) {
 
@@ -793,8 +791,6 @@ int (*rank_map)[ncube] = new int[2][ncube]
 		    }
 			*/
 	}
-
-
 
 
 	sprintf(file_name,".\\MPI_files\\MPI_communication_table_in_turn.dat");    
